@@ -14,6 +14,10 @@ export pathtotop=/home/peter/stan
 #         run_performance_testing.sh
 #     benchmark/
 #         .git
+#
+# Benchmarks in testfile. Input in inputfile. Separate translation unit to
+# prevent spurious constant propagation. If the benchmark::MakeUnpredictable PR
+# ever lands do that instead.
 
 clang-format-5.0 -i $testfile.cpp
 clang-format-5.0 -i $inputfile.cpp

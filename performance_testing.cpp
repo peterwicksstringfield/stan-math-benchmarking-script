@@ -137,6 +137,12 @@ void benchmark_neg_binomial_2_cdf(benchmark::State &state, const T_mu &,
   }
 }
 
+// Would like to say:
+//     BENCHMARK_CAPTURE(benchmark_inc_beta<v, v, v>(as, bs, zs))
+// But we can't. So instead we say:
+//     BENCHMARK_CAPTURE(benchmark_inc_beta, dummy_v, dummy_v, dummy_v)
+// Which delegates to:
+//     benchmark_inc_beta<v, v, v>(as, bs, zs);
 double double_;
 var var_;
 
