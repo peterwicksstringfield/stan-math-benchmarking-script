@@ -51,12 +51,12 @@ double do_calculation(const std::vector<double> &as,
       }
     }
   }
-  double xxx = 0;
-  xxx += maybe_do_a_grad(accum, as_T);
-  xxx += maybe_do_a_grad(accum, bs_T);
-  xxx += maybe_do_a_grad(accum, zs_T);
+  double accum2 = 0;
+  accum2 += maybe_do_a_grad(accum, as_T);
+  accum2 += maybe_do_a_grad(accum, bs_T);
+  accum2 += maybe_do_a_grad(accum, zs_T);
   stan::math::recover_memory_nested();
-  return xxx;
+  return accum2;
 }
 
 template <typename T_location, typename T_precision>
@@ -68,11 +68,11 @@ double do_other_calculation(const std::vector<int> &n,
   std::vector<T_precision> phi_as_T_precision(phi.begin(), phi.end());
   var lp =
       stan::math::neg_binomial_2_cdf(n, mu_as_T_location, phi_as_T_precision);
-  double xxx = 0;
-  xxx += maybe_do_a_grad(lp, mu_as_T_location);
-  xxx += maybe_do_a_grad(lp, phi_as_T_precision);
+  double accum2 = 0;
+  accum2 += maybe_do_a_grad(lp, mu_as_T_location);
+  accum2 += maybe_do_a_grad(lp, phi_as_T_precision);
   stan::math::recover_memory_nested();
-  return xxx;
+  return accum2;
 }
 
 extern std::vector<double> as;
@@ -144,6 +144,9 @@ double sum_calculation_along_lattice(const std::vector<double> &as,
 static bool once = true;
 void evaluate_inc_beta_at_many_points_and_all_double_var_combinations(
     benchmark::State &state) {
+  std::vector<double> as{0.1, 0.5, 1, 10, 100};
+  std::vector<double> bs{0.1, 0.5, 1, 10, 100};
+  std::vector<double> zs{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
   double accum = 0;
   accum += sum_calculation_along_lattice(as, bs, zs);
   accum += sum_calculation_along_lattice(as, bs, zs);
@@ -189,7 +192,7 @@ void benchmark_neg_binomial_2_cdf(benchmark::State &state, const T_mu &,
 double double_;
 var var_;
 
-const int repetitions = 1;
+const int repetitions = 3;
 
 BENCHMARK_CAPTURE_(benchmark_inc_beta, vvv, var_, var_, var_)
     ->Repetitions(repetitions);

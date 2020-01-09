@@ -2,6 +2,7 @@ export testfile=performance_testing
 export inputfile=performance_testing_input
 export branch1=develop
 export branch2=optimize_incomplete_beta
+export branch3=optimize_incomplete_beta~
 export pathtotop=/home/peter/stan
 
 # /path/to/top/
@@ -37,3 +38,4 @@ benchmark_branch () {
 
 benchmark_branch $branch1
 benchmark_branch $branch2
+benchmark_branch $branch3
