@@ -7,23 +7,6 @@ export branch2=optimize_incomplete_beta
 export branch3=optimize_incomplete_beta~
 export pathtotop=../
 
-# /path/to/top/
-#     math/
-#         .git (branch1 and branch2)
-#     math-microbenchmark/
-#         .git
-#         testfile
-#         inputfile
-#         run_performance_testing.sh
-#     benchmark/
-#         .git
-#
-# Benchmarks in testfile. Input in inputfile. Separate translation unit to
-# prevent spurious constant propagation. If the benchmark ever implements MakeUnpredictable.
-#
-# Run like this:
-# ./run_performance_testing.sh
-
 clang-format-5.0 -i $testfile.cpp
 clang-format-5.0 -i $inputfile.cpp
 

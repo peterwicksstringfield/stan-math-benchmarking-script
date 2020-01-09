@@ -2,7 +2,7 @@
 #include <cmath>
 #include <stan/math.hpp>
 
-// See run_performnce_testing.sh
+// Add branch name to output.
 
 #ifndef BRANCH
 #define BRANCH UNKNOWN_BRANCH
@@ -10,8 +10,6 @@
 #define STRINGIFY_(name) #name
 #define STRINGIFY(name) STRINGIFY_(name)
 #define BRANCHNAME STRINGIFY(BRANCH)
-
-// Add branch name to benchmark output.
 
 #define BENCHMARK_CAPTURE_(func, test_case_name, ...)                          \
   BENCHMARK_CAPTURE__(func, BRANCH test_case_name, __VA_ARGS__)
