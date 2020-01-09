@@ -2,17 +2,19 @@
 #include <cmath>
 #include <stan/math.hpp>
 
+// See run_performnce_testing.sh
+
 #ifndef BRANCH
 #define BRANCH UNKNOWN_BRANCH
 #endif
+
+// Add branch name to benchmark output.
 
 #define BENCHMARK_CAPTURE_(func, test_case_name, ...)                          \
   BENCHMARK_CAPTURE__(func, BRANCH test_case_name, __VA_ARGS__)
 
 #define BENCHMARK_CAPTURE__(func, test_case_name, ...)                         \
   BENCHMARK_CAPTURE(func, test_case_name, __VA_ARGS__)
-
-// (I spent way too much time fighting with those macros.)
 
 using stan::math::var;
 
@@ -140,7 +142,7 @@ void benchmark_neg_binomial_2_cdf(benchmark::State &state, const T_mu &,
 // Would like to say:
 //     BENCHMARK_CAPTURE(benchmark_inc_beta<v, v, v>(as, bs, zs))
 // But we can't. So instead we say:
-//     BENCHMARK_CAPTURE(benchmark_inc_beta, dummy_v, dummy_v, dummy_v)
+//     BENCHMARK_CAPTURE(benchmark_inc_beta, var_, var_, var_)
 // Which delegates to:
 //     benchmark_inc_beta<v, v, v>(as, bs, zs);
 double double_;
