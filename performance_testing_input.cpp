@@ -4,6 +4,7 @@ std::vector<double> as{0.1, 0.5, 1, 10, 100};
 std::vector<double> bs{0.1, 0.5, 1, 10, 100};
 std::vector<double> zs{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
 
+// neg_binomial_2
 // E[Y] = mu ~ 50.
 // phi[i] = mu[i]^2.
 // sqrt[Var[Y]]] = sqrt[mu + mu^2/phi] ~ sqrt[51] ~ 7.
