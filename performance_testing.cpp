@@ -7,7 +7,8 @@
 #ifndef BRANCH
 #define BRANCH UNKNOWN_BRANCH
 #endif
-#define STRINGIFY(NAME) #NAME
+#define STRINGIFY_(name) #name
+#define STRINGIFY(name) STRINGIFY_(name)
 #define BRANCHNAME STRINGIFY(BRANCH)
 
 // Add branch name to benchmark output.
@@ -125,23 +126,43 @@ void test_do_other_calculation(benchmark::State &) {
 }
 BENCHMARK(test_do_other_calculation);
 
-void evaluate_inc_beta_at_lattice(benchmark::State &) {
-  std::vector<double> more_as = as;
-  more_as.push_back(1000);
-  std::vector<double> more_bs = bs;
-  more_bs.push_back(1000);
+double sum_calculation_along_lattice(const std::vector<double> &as,
+                                     const std::vector<double> &bs,
+                                     const std::vector<double> &zs) {
   double accum = 0;
-  accum += do_calculation<double, double, double>(more_as, more_bs, zs);
-  accum += do_calculation<var, double, double>(more_as, more_bs, zs);
-  accum += do_calculation<double, var, double>(more_as, more_bs, zs);
-  accum += do_calculation<double, double, var>(more_as, more_bs, zs);
-  accum += do_calculation<var, var, double>(more_as, more_bs, zs);
-  accum += do_calculation<double, var, var>(more_as, more_bs, zs);
-  accum += do_calculation<var, double, var>(more_as, more_bs, zs);
-  accum += do_calculation<var, var, var>(more_as, more_bs, zs);
-  std::cout << "On " << BRANCHNAME << " we get " << accum << "." << std::endl;
+  accum += do_calculation<double, double, double>(as, bs, zs);
+  accum += do_calculation<var, double, double>(as, bs, zs);
+  accum += do_calculation<double, var, double>(as, bs, zs);
+  accum += do_calculation<double, double, var>(as, bs, zs);
+  accum += do_calculation<var, var, double>(as, bs, zs);
+  accum += do_calculation<double, var, var>(as, bs, zs);
+  accum += do_calculation<var, double, var>(as, bs, zs);
+  accum += do_calculation<var, var, var>(as, bs, zs);
+  return accum;
 }
-BENCHMARK(evaluate_inc_beta_at_lattice);
+
+static bool once = true;
+void evaluate_inc_beta_at_many_points_and_all_double_var_combinations(
+    benchmark::State &state) {
+  double accum = 0;
+  accum += sum_calculation_along_lattice(as, bs, zs);
+  accum += sum_calculation_along_lattice(as, bs, zs);
+  // "Benchmark" executed many times, only want 1 copy of the output. XXX.
+  if (once)
+    std::cout << "On " << BRANCHNAME << " we get " << accum << "." << std::endl;
+  accum = 0;
+  std::vector<double> as_with_large_a = as;
+  as_with_large_a.push_back(1000);
+  accum += sum_calculation_along_lattice(as_with_large_a, bs, zs);
+  std::vector<double> bs_with_large_b = bs;
+  bs_with_large_b.push_back(1000);
+  accum += sum_calculation_along_lattice(as, bs_with_large_b, zs);
+  if (once)
+    std::cout << "Including large a and b on " << BRANCHNAME << " we get "
+              << accum << "." << std::endl;
+  once = false;
+}
+BENCHMARK(evaluate_inc_beta_at_many_points_and_all_double_var_combinations);
 
 template <typename T_a, typename T_b, typename T_z>
 void benchmark_inc_beta(benchmark::State &state, const T_a &, const T_b &,
