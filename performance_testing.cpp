@@ -123,6 +123,31 @@ void test_do_other_calculation(benchmark::State &state) {
 }
 BENCHMARK(test_do_other_calculation);
 
+void evaluate_inc_beta_at_lattice() {
+  std::vector<double> more_as = as;
+  more_as.push_back(1000);
+  std::vector<double> more_bs = bs;
+  more_bs.push_back(1000);
+  double accum = 0;
+  accum += do_calculation<double, double, double>(more_as, more_bs, zs);
+  accum += do_calculation<var, double, double>(more_as, more_bs, zs);
+  accum += do_calculation<double, var, double>(more_as, more_bs, zs);
+  accum += do_calculation<double, double, var>(more_as, more_bs, zs);
+  accum += do_calculation<var, var, double>(more_as, more_bs, zs);
+  accum += do_calculation<double, var, var>(more_as, more_bs, zs);
+  accum += do_calculation<var, double, var>(more_as, more_bs, zs);
+  accum += do_calculation<var, var, var>(more_as, more_bs, zs);
+  using fvar_ = stan::math::fvar<double> accum +=
+      do_calculation<fvar, double, double>(more_as, more_bs, zs);
+  accum += do_calculation<double, fvar, double>(more_as, more_bs, zs);
+  accum += do_calculation<double, double, fvar>(more_as, more_bs, zs);
+  accum += do_calculation<fvar, fvar, double>(more_as, more_bs, zs);
+  accum += do_calculation<double, fvar, fvar>(more_as, more_bs, zs);
+  accum += do_calculation<fvar, double, fvar>(more_as, more_bs, zs);
+  accum += do_calculation<fvar, fvar, fvar>(more_as, more_bs, zs);
+  std::cout << "On " << BRANCH << " we get " << accum << "." << std::endl;
+}
+
 template <typename T_a, typename T_b, typename T_z>
 void benchmark_inc_beta(benchmark::State &state, const T_a &, const T_b &,
                         const T_z &) {
