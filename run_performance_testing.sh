@@ -1,9 +1,11 @@
+#!/bin/bash
+
 export testfile=performance_testing
 export inputfile=performance_testing_input
 export branch1=develop
 export branch2=optimize_incomplete_beta
 export branch3=optimize_incomplete_beta~
-export pathtotop=/home/peter/stan
+export pathtotop=../
 
 # /path/to/top/
 #     math/
@@ -17,8 +19,10 @@ export pathtotop=/home/peter/stan
 #         .git
 #
 # Benchmarks in testfile. Input in inputfile. Separate translation unit to
-# prevent spurious constant propagation. If the benchmark::MakeUnpredictable PR
-# ever lands do that instead.
+# prevent spurious constant propagation. If the benchmark ever implements MakeUnpredictable.
+#
+# Run like this:
+# ./run_performance_testing.sh
 
 clang-format-5.0 -i $testfile.cpp
 clang-format-5.0 -i $inputfile.cpp
