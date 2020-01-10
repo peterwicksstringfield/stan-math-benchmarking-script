@@ -34,9 +34,8 @@ double maybe_do_a_grad(var &dependent, std::vector<double> &independents) {
 }
 
 template <typename T_a, typename T_b, typename T_z>
-double do_calculation(const std::vector<double> &as,
-                      const std::vector<double> &bs,
-                      const std::vector<double> &zs) {
+double do_inc_beta(const std::vector<double> &as, const std::vector<double> &bs,
+                   const std::vector<double> &zs) {
   stan::math::start_nested();
   std::vector<T_a> as_T(as.begin(), as.end());
   std::vector<T_b> bs_T(bs.begin(), bs.end());
@@ -58,9 +57,9 @@ double do_calculation(const std::vector<double> &as,
 }
 
 template <typename T_location, typename T_precision>
-double do_other_calculation(const std::vector<int> &n,
-                            const std::vector<double> &mu,
-                            const std::vector<double> &phi) {
+double do_neg_binomial_2_cdf(const std::vector<int> &n,
+                             const std::vector<double> &mu,
+                             const std::vector<double> &phi) {
   stan::math::start_nested();
   std::vector<T_location> mu_as_T_location(mu.begin(), mu.end());
   std::vector<T_precision> phi_as_T_precision(phi.begin(), phi.end());
@@ -73,6 +72,65 @@ double do_other_calculation(const std::vector<int> &n,
   return accum2;
 }
 
+double do_grad_reg_inc_beta(const std::vector<double> &as,
+                            const std::vector<double> &bs,
+                            const std::vector<double> &zs) {
+  stan::math::start_nested();
+  std::vector<var> as_T(as.begin(), as.end());
+  std::vector<var> bs_T(bs.begin(), bs.end());
+  std::vector<var> zs_T(zs.begin(), zs.end());
+  var accum = 0;
+  for (var &a : as_T) {
+    for (var &b : bs_T) {
+      for (var &z : zs_T) {
+        var digamma_a = stan::math::digamma(a);
+        var digamma_b = stan::math::digamma(b);
+        var digamma_ab = stan::math::digamma(a + b);
+        var beta_ab = stan::math::beta(a, b);
+        var d_a = 0;
+        var d_b = 0;
+        grad_reg_inc_beta(d_a, d_b, a, b, z, digamma_a, digamma_b, digamma_ab,
+                          beta_ab);
+        accum += d_a;
+        accum += d_b;
+      }
+    }
+  }
+  double accum2 = 0;
+  accum2 += maybe_do_a_grad(accum, as_T);
+  accum2 += maybe_do_a_grad(accum, bs_T);
+  accum2 += maybe_do_a_grad(accum, zs_T);
+  stan::math::recover_memory_nested();
+  return accum2;
+}
+
+double do_inc_beta_dda_ddb(const std::vector<double> &as,
+                           const std::vector<double> &bs,
+                           const std::vector<double> &zs) {
+  stan::math::start_nested();
+  std::vector<var> as_T(as.begin(), as.end());
+  std::vector<var> bs_T(bs.begin(), bs.end());
+  std::vector<var> zs_T(zs.begin(), zs.end());
+  var accum = 0;
+  for (var &a : as_T) {
+    for (var &b : bs_T) {
+      for (var &z : zs_T) {
+        var digamma_a = stan::math::digamma(a);
+        var digamma_b = stan::math::digamma(b);
+        var digamma_ab = stan::math::digamma(a + b);
+        accum += inc_beta_dda(a, b, z, digamma_a, digamma_ab);
+        accum += inc_beta_ddb(a, b, z, digamma_b, digamma_ab)
+      }
+    }
+  }
+  double accum2 = 0;
+  accum2 += maybe_do_a_grad(accum, as_T);
+  accum2 += maybe_do_a_grad(accum, bs_T);
+  accum2 += maybe_do_a_grad(accum, zs_T);
+  stan::math::recover_memory_nested();
+  return accum2;
+}
+
 extern std::vector<double> as;
 extern std::vector<double> bs;
 extern std::vector<double> zs;
@@ -81,8 +139,8 @@ extern std::vector<int> n;
 extern std::vector<double> mu;
 extern std::vector<double> phi;
 
-void test_do_calculation(benchmark::State &) {
-  const double result_ddd = do_calculation<double, double, double>(as, bs, zs);
+void test_do_inc_beta(benchmark::State &) {
+  const double result_ddd = do_inc_beta<double, double, double>(as, bs, zs);
   const double expected_result_ddd = 0;
   assert(expected_result_ddd == result_ddd);
   double expected_result_vdd = 0;
@@ -102,40 +160,48 @@ void test_do_calculation(benchmark::State &) {
       }
     }
   }
-  const double result_vdd = do_calculation<var, double, double>(as, bs, zs);
-  const double result_dvd = do_calculation<double, var, double>(as, bs, zs);
-  const double result_ddv = do_calculation<double, double, var>(as, bs, zs);
+  const double result_vdd = do_inc_beta<var, double, double>(as, bs, zs);
+  const double result_dvd = do_inc_beta<double, var, double>(as, bs, zs);
+  const double result_ddv = do_inc_beta<double, double, var>(as, bs, zs);
   assert(fabs(expected_result_vdd - result_vdd) < 1e-3);
   assert(fabs(expected_result_dvd - result_dvd) < 1e-3);
   assert(fabs(expected_result_ddv - result_ddv) < 1e-3);
 }
-BENCHMARK(test_do_calculation);
+BENCHMARK(test_do_inc_beta);
 
-void test_do_other_calculation(benchmark::State &) {
-  const double result_dd = do_other_calculation<double, double>(n, mu, phi);
+void test_do_neg_binomial_2_cdf(benchmark::State &) {
+  const double result_dd = do_neg_binomial_2_cdf<double, double>(n, mu, phi);
   const double expected_result_dd = 0;
   assert(expected_result_dd == result_dd);
-  const double result_vd = do_other_calculation<var, double>(n, mu, phi);
+  const double result_vd = do_neg_binomial_2_cdf<var, double>(n, mu, phi);
   assert(result_vd != 0);
   assert(std::isfinite(result_vd));
-  const double result_dv = do_other_calculation<double, var>(n, mu, phi);
+  const double result_dv = do_neg_binomial_2_cdf<double, var>(n, mu, phi);
   assert(result_dv != 0);
   assert(std::isfinite(result_dv));
 }
-BENCHMARK(test_do_other_calculation);
+BENCHMARK(test_do_neg_binomial_2_cdf);
 
-double sum_calculation_along_lattice(const std::vector<double> &as,
-                                     const std::vector<double> &bs,
-                                     const std::vector<double> &zs) {
+void test_grad_vs_dda_ddb(benchmark::State &) {
+  const double result = do_grad_reg_inc_beta(as, bs, zs);
+  const double result2 = do_inc_beta_dda_ddb(as, bs, zs);
+  std::cout << result << " vs " << result2 << std::endl;
+  assert(fabs(result1 - result2) < 1e-3);
+}
+BENCHMARK(test_do_neg_binomial_2_cdf);
+
+double sum_inc_beta_along_lattice(const std::vector<double> &as,
+                                  const std::vector<double> &bs,
+                                  const std::vector<double> &zs) {
   double accum = 0;
-  accum += do_calculation<double, double, double>(as, bs, zs);
-  accum += do_calculation<var, double, double>(as, bs, zs);
-  accum += do_calculation<double, var, double>(as, bs, zs);
-  accum += do_calculation<double, double, var>(as, bs, zs);
-  accum += do_calculation<var, var, double>(as, bs, zs);
-  accum += do_calculation<double, var, var>(as, bs, zs);
-  accum += do_calculation<var, double, var>(as, bs, zs);
-  accum += do_calculation<var, var, var>(as, bs, zs);
+  accum += do_inc_beta<double, double, double>(as, bs, zs);
+  accum += do_inc_beta<var, double, double>(as, bs, zs);
+  accum += do_inc_beta<double, var, double>(as, bs, zs);
+  accum += do_inc_beta<double, double, var>(as, bs, zs);
+  accum += do_inc_beta<var, var, double>(as, bs, zs);
+  accum += do_inc_beta<double, var, var>(as, bs, zs);
+  accum += do_inc_beta<var, double, var>(as, bs, zs);
+  accum += do_inc_beta<var, var, var>(as, bs, zs);
   return accum;
 }
 
@@ -146,18 +212,18 @@ void evaluate_inc_beta_at_many_points_and_all_double_var_combinations(
   std::vector<double> bs{0.1, 0.5, 1, 10, 100};
   std::vector<double> zs{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
   double accum = 0;
-  accum += sum_calculation_along_lattice(as, bs, zs);
-  accum += sum_calculation_along_lattice(as, bs, zs);
+  accum += sum_inc_beta_along_lattice(as, bs, zs);
+  accum += sum_inc_beta_along_lattice(as, bs, zs);
   // "Benchmark" executed many times, only want 1 copy of the output. XXX.
   if (once)
     std::cout << "On " << BRANCHNAME << " we get " << accum << "." << std::endl;
   accum = 0;
   std::vector<double> as_with_large_a = as;
-  as_with_large_a.push_back(1000);
-  accum += sum_calculation_along_lattice(as_with_large_a, bs, zs);
+  as_with_large_a.push_back(15000);
+  accum += sum_inc_beta_along_lattice(as_with_large_a, bs, zs);
   std::vector<double> bs_with_large_b = bs;
-  bs_with_large_b.push_back(1000);
-  accum += sum_calculation_along_lattice(as, bs_with_large_b, zs);
+  bs_with_large_b.push_back(15000);
+  accum += sum_inc_beta_along_lattice(as, bs_with_large_b, zs);
   if (once)
     std::cout << "Including large a and b on " << BRANCHNAME << " we get "
               << accum << "." << std::endl;
@@ -169,7 +235,7 @@ template <typename T_a, typename T_b, typename T_z>
 void benchmark_inc_beta(benchmark::State &state, const T_a &, const T_b &,
                         const T_z &) {
   for (auto _ : state) {
-    benchmark::DoNotOptimize(do_calculation<T_a, T_b, T_z>(as, bs, zs));
+    benchmark::DoNotOptimize(do_inc_beta<T_a, T_b, T_z>(as, bs, zs));
   }
 }
 
@@ -177,7 +243,7 @@ template <typename T_mu, typename T_phi>
 void benchmark_neg_binomial_2_cdf(benchmark::State &state, const T_mu &,
                                   const T_phi &) {
   for (auto _ : state) {
-    benchmark::DoNotOptimize(do_other_calculation<T_mu, T_phi>(n, mu, phi));
+    benchmark::DoNotOptimize(do_neg_binomial_2_cdf<T_mu, T_phi>(n, mu, phi));
   }
 }
 
@@ -190,21 +256,21 @@ void benchmark_neg_binomial_2_cdf(benchmark::State &state, const T_mu &,
 double double_;
 var var_;
 
-const int repetitions = 3;
+const int repetitions = 1;
 
 BENCHMARK_CAPTURE_(benchmark_inc_beta, vvv, var_, var_, var_)
-    ->Repetitions(repetitions);
-BENCHMARK_CAPTURE_(benchmark_inc_beta, vvd, var_, var_, double_)
-    ->Repetitions(repetitions);
-BENCHMARK_CAPTURE_(benchmark_inc_beta, ddv, double_, double_, var_)
     ->Repetitions(repetitions);
 BENCHMARK_CAPTURE_(benchmark_inc_beta, vdv, var_, double_, var_)
     ->Repetitions(repetitions);
 BENCHMARK_CAPTURE_(benchmark_inc_beta, dvv, double_, var_, var_)
     ->Repetitions(repetitions);
+BENCHMARK_CAPTURE_(benchmark_inc_beta, vvd, var_, var_, double_)
+    ->Repetitions(repetitions);
 BENCHMARK_CAPTURE_(benchmark_inc_beta, dvd, double_, var_, double_)
     ->Repetitions(repetitions);
 BENCHMARK_CAPTURE_(benchmark_inc_beta, vdd, var_, double_, double_)
+    ->Repetitions(repetitions);
+BENCHMARK_CAPTURE_(benchmark_inc_beta, ddv, double_, double_, var_)
     ->Repetitions(repetitions);
 BENCHMARK_CAPTURE_(benchmark_inc_beta, ddd, double_, double_, double_)
     ->Repetitions(repetitions);
