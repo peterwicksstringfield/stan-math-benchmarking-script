@@ -3,8 +3,8 @@
 export testfile=performance_testing
 export inputfile=performance_testing_input
 export branch1=develop
-export branch2=optimize_incomplete_beta_no_grad
-export branch3=optimize_incomplete_beta
+export branch3=inc_beta_no_grad
+export branch2=optimize_inc_beta
 
 clang-format-5.0 -i $testfile.cpp
 clang-format-5.0 -i $inputfile.cpp
