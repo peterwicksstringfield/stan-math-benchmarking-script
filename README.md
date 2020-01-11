@@ -1,3 +1,5 @@
+Kludgy thing that benchmarks some stuff in the math library.
+
 Run like this:
 ./run_performance_testing.sh
 
@@ -18,3 +20,5 @@ Requires (benchmark)[https://github.com/google/benchmark]
 
 Benchmarks in testfile. Input in inputfile. Separate translation unit to
 prevent spurious constant propagation.
+
+Choose the branchs to compare in the shell script.

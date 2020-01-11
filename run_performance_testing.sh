@@ -3,7 +3,6 @@
 export testfile=performance_testing
 export inputfile=performance_testing_input
 export branch1=develop
-export branch3=inc_beta_no_grad
 export branch2=optimize_inc_beta
 
 clang-format-5.0 -i $testfile.cpp
@@ -24,4 +23,3 @@ benchmark_branch () {
 
 benchmark_branch $branch1
 benchmark_branch $branch2
-benchmark_branch $branch3

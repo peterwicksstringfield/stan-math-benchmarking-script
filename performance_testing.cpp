@@ -126,6 +126,28 @@ extern std::vector<int> n;
 extern std::vector<double> mu;
 extern std::vector<double> phi;
 
+void test_grad_vs_dda_ddb(benchmark::State &, dummy &) {
+  for (const double &a : as) {
+    for (const double &b : bs) {
+      for (const double &z : zs) {
+        double digamma_a = stan::math::digamma(a);
+        double digamma_b = stan::math::digamma(b);
+        double digamma_ab = stan::math::digamma(a + b);
+        double beta_ab = stan::math::beta(a, b);
+        double d_a = 0;
+        double d_b = 0;
+        stan::math::grad_reg_inc_beta(d_a, d_b, a, b, z, digamma_a, digamma_b,
+                                      digamma_ab, beta_ab);
+        double d_a_2 = stan::math::inc_beta_dda(a, b, z, digamma_a, digamma_ab);
+        double d_b_2 = stan::math::inc_beta_ddb(a, b, z, digamma_b, digamma_ab);
+        assert(fabs(d_a - d_a_2) < 1e-3);
+        assert(fabs(d_b - d_b_2) < 1e-3);
+      }
+    }
+  }
+}
+BENCHMARK_(test_grad_vs_dda_ddb);
+
 void test_do_inc_beta(benchmark::State &, dummy &) {
   const double result_ddd = do_inc_beta<double, double, double>(as, bs, zs);
   const double expected_result_ddd = 0;
@@ -168,14 +190,6 @@ void test_do_neg_binomial_2_cdf(benchmark::State &, dummy &) {
   assert(std::isfinite(result_dv));
 }
 BENCHMARK_(test_do_neg_binomial_2_cdf);
-
-void test_grad_vs_dda_ddb(benchmark::State &, dummy &) {
-  const double result1 = do_grad_reg_inc_beta(as, bs, zs);
-  const double result2 = do_inc_beta_dda_ddb(as, bs, zs);
-  std::cout << result1 << " vs " << result2 << std::endl;
-  assert(fabs(result1 - result2) < 1e-3);
-}
-BENCHMARK_(test_grad_vs_dda_ddb);
 
 double sum_inc_beta_along_lattice(const std::vector<double> &as,
                                   const std::vector<double> &bs,
@@ -233,20 +247,6 @@ void benchmark_neg_binomial_2_cdf(benchmark::State &state, const T_mu &,
   }
 }
 
-void benchmark_grad_reg_inc_beta(benchmark::State &state, dummy &) {
-  for (auto _ : state) {
-    benchmark::DoNotOptimize(do_grad_reg_inc_beta(as, bs, zs));
-  }
-}
-BENCHMARK_(benchmark_grad_reg_inc_beta);
-
-void benchmark_inc_beta_dda_ddb(benchmark::State &state, dummy &) {
-  for (auto _ : state) {
-    benchmark::DoNotOptimize(do_inc_beta_dda_ddb(as, bs, zs));
-  }
-}
-BENCHMARK_(benchmark_inc_beta_dda_ddb);
-
 // Would like to say:
 //     BENCHMARK_CAPTURE(benchmark_inc_beta<v, v, v>(as, bs, zs))
 // But we can't. So instead we say:
@@ -257,6 +257,20 @@ double double_;
 var var_;
 
 const int repetitions = 3;
+
+void benchmark_grad_reg_inc_beta(benchmark::State &state, dummy &) {
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(do_grad_reg_inc_beta(as, bs, zs));
+  }
+}
+BENCHMARK_(benchmark_grad_reg_inc_beta)->Repetitions(repetitions);
+
+void benchmark_inc_beta_dda_ddb(benchmark::State &state, dummy &) {
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(do_inc_beta_dda_ddb(as, bs, zs));
+  }
+}
+BENCHMARK_(benchmark_inc_beta_dda_ddb)->Repetitions(repetitions);
 
 BENCHMARK_CAPTURE_(benchmark_inc_beta, vvv, var_, var_, var_)
     ->Repetitions(repetitions);
