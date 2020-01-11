@@ -9,7 +9,7 @@ Requires [benchmark|https://github.com/google/benchmark]
 /path/to/top/
     math/
         .git (branch1 and branch2)
-    math-microbenchmark/
+    stan-math-benchmarking-script/
         .git
         testfile
         inputfile
