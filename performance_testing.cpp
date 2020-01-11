@@ -27,7 +27,6 @@ using stan::math::var;
 template <typename T> double maybe_do_a_grad(var &, std::vector<T> &);
 
 double maybe_do_a_grad(var &dependent, std::vector<var> &independents) {
-  using stan::math::set_zero_all_adjoints;
   stan::math::set_zero_all_adjoints();
   std::vector<double> grad;
   dependent.grad(independents, grad);
@@ -191,7 +190,7 @@ void test_do_neg_binomial_2_cdf(benchmark::State &, dummy &) {
 }
 BENCHMARK_(test_do_neg_binomial_2_cdf);
 
-double sum_inc_beta_along_lattice(const std::vector<double> &as,
+double eval_inc_beta_along_lattice(const std::vector<double> &as,
                                   const std::vector<double> &bs,
                                   const std::vector<double> &zs) {
   double accum = 0;
@@ -212,22 +211,11 @@ void eval_inc_beta_print_output(benchmark::State &state, dummy &) {
   std::vector<double> bs{0.1, 0.5, 1, 10, 100};
   std::vector<double> zs{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
   double accum = 0;
-  accum += sum_inc_beta_along_lattice(as, bs, zs);
-  accum += sum_inc_beta_along_lattice(as, bs, zs);
+  accum += eval_inc_beta_along_lattice(as, bs, zs);
+  accum += eval_inc_beta_along_lattice(as, bs, zs);
   // "Benchmark" executed many times, only want 1 copy of the output. XXX.
   if (once)
     std::cout << "On " << BRANCHNAME << " we get " << accum << "." << std::endl;
-  accum = 0;
-  std::vector<double> as_with_large_a = as;
-  as_with_large_a.push_back(15000);
-  accum += sum_inc_beta_along_lattice(as_with_large_a, bs, zs);
-  std::vector<double> bs_with_large_b = bs;
-  bs_with_large_b.push_back(15000);
-  accum += sum_inc_beta_along_lattice(as, bs_with_large_b, zs);
-  if (once)
-    std::cout << "Including large a and b on " << BRANCHNAME << " we get "
-              << accum << "." << std::endl;
-  once = false;
 }
 BENCHMARK_(eval_inc_beta_print_output);
 
@@ -256,7 +244,7 @@ void benchmark_neg_binomial_2_cdf(benchmark::State &state, const T_mu &,
 double double_;
 var var_;
 
-const int repetitions = 3;
+const int repetitions = 1;
 
 void benchmark_grad_reg_inc_beta(benchmark::State &state, dummy &) {
   for (auto _ : state) {
