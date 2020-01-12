@@ -191,8 +191,8 @@ void test_do_neg_binomial_2_cdf(benchmark::State &, dummy &) {
 BENCHMARK_(test_do_neg_binomial_2_cdf);
 
 double eval_inc_beta_along_lattice(const std::vector<double> &as,
-                                  const std::vector<double> &bs,
-                                  const std::vector<double> &zs) {
+                                   const std::vector<double> &bs,
+                                   const std::vector<double> &zs) {
   double accum = 0;
   accum += do_inc_beta<double, double, double>(as, bs, zs);
   accum += do_inc_beta<var, double, double>(as, bs, zs);
@@ -216,6 +216,7 @@ void eval_inc_beta_print_output(benchmark::State &state, dummy &) {
   // "Benchmark" executed many times, only want 1 copy of the output. XXX.
   if (once)
     std::cout << "On " << BRANCHNAME << " we get " << accum << "." << std::endl;
+  once = false;
 }
 BENCHMARK_(eval_inc_beta_print_output);
 
