@@ -1,11 +1,11 @@
-Don't use this. See [https://github.com/stan-dev/perf-math](stan-dev/perf-math).
+Don't use this. See [stan-dev/perf-math](https://github.com/stan-dev/perf-math).
 
 Kludgy thing that benchmarks some stuff in the math library.
 
 Run like this:
 ./run_performance_testing.sh
 
-Requires [https://github.com/google/benchmark](benchmark).
+Requires [benchmark](https://github.com/google/benchmark).
 
 ```
 /path/to/top/
